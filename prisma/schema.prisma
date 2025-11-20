@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Parking Spot Model
+model ParkingSpot {
+  id           Int           @id @default(autoincrement())
+  spotNumber   String        @unique // e.g., "1-001", "2-050", "3-100"
+  floor        Int           // 1, 2, or 3
+  status       SpotStatus    @default(AVAILABLE)
+  type         SpotType      @default(STANDARD)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  // Relations
+  reservations Reservation[]
+
+  @@index([floor])
+  @@index([status])
+  @@index([type])
+  @@map("parking_spots")
+}
+
+// Vehicle Model
+model Vehicle {
+  id           Int           @id @default(autoincrement())
+  licensePlate String        @unique
+  ownerName    String?
+  ownerPhone   String?
+  vehicleType  String?       // e.g., "sedan", "suv", "motorcycle"
+  createdAt    DateTime      @default(now())
+  
+  // Relations
+  reservations Reservation[]
+
+  @@index([licensePlate])
+  @@map("vehicles")
+}
+
+// Reservation Model
+model Reservation {
+  id        Int               @id @default(autoincrement())
+  spotId    Int
+  vehicleId Int
+  startTime DateTime          @default(now())
+  endTime   DateTime?
+  status    ReservationStatus @default(ACTIVE)
+  createdAt DateTime          @default(now())
+  
+  // Relations
+  spot      ParkingSpot       @relation(fields: [spotId], references: [id])
+  vehicle   Vehicle           @relation(fields: [vehicleId], references: [id])
+
+  @@index([spotId])
+  @@index([vehicleId])
+  @@index([status])
+  @@map("reservations")
+}
+
+// Enums
+enum SpotStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+enum SpotType {
+  STANDARD
+  DISABLED
+  ELECTRIC
+  VIP
+}
+
+enum ReservationStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
